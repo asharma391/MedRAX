@@ -7,7 +7,7 @@ import json
 import re
 from typing import Dict, List, Tuple, Optional, Any
 from ..prompts.generator import GENERATOR_PROMPT
-from llm import timed_llm_call
+from ..llm import timed_llm_call
 
 class Generator:
     """

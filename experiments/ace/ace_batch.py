@@ -16,9 +16,9 @@ from typing import Dict, List, Tuple, Optional, Any
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .core import Generator, Reflector, Curator, BulletpointAnalyzer
-from playbook_utils import *
-from logger import *
-from utils import *
+from .playbook_utils import *
+from .logger import *
+from .utils import *
 
 # Placeholder answer when API error occurs - will be marked incorrect by answer_is_correct
 INCORRECT_DUE_TO_API_ERROR = "INCORRECT_DUE_TO_API_ERROR"

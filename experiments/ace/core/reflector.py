@@ -6,7 +6,7 @@ Analyzes generator outputs and provides feedback on bullet usage.
 import json
 from typing import Dict, List, Tuple, Optional, Any
 from ..prompts.reflector import REFLECTOR_PROMPT, REFLECTOR_PROMPT_NO_GT
-from llm import timed_llm_call
+from ..llm import timed_llm_call
 
 
 class Reflector:
