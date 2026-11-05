@@ -17,36 +17,18 @@ logging.set_verbosity_error()
 _ = load_dotenv()
 
 
-def initialize_agent(
-    prompt_file,
-    tools_to_use=None,
-    model_dir="/model-weights",
-    temp_dir="temp",
-    device="cuda",
-    model="chatgpt-4o-latest",
-    temperature=0.7,
-    top_p=0.95,
-    openai_kwargs={}
-):
-    """Initialize the MedRAX agent with specified tools and configuration.
+def build_tools(tools_to_use=None, model_dir="/model-weights", temp_dir="temp", device="cuda"):
+    """Instantiate MedRAX tools by name.
 
     Args:
-        prompt_file (str): Path to file containing system prompts
-        tools_to_use (List[str], optional): List of tool names to initialize. If None, all tools are initialized.
-        model_dir (str, optional): Directory containing model weights. Defaults to "/model-weights".
-        temp_dir (str, optional): Directory for temporary files. Defaults to "temp".
-        device (str, optional): Device to run models on. Defaults to "cuda".
-        model (str, optional): Model to use. Defaults to "chatgpt-4o-latest".
-        temperature (float, optional): Temperature for the model. Defaults to 0.7.
-        top_p (float, optional): Top P for the model. Defaults to 0.95.
-        openai_kwargs (dict, optional): Additional keyword arguments for OpenAI API, such as API key and base URL.
+        tools_to_use (List[str], optional): Tool names to initialize. If None, all tools are initialized.
+        model_dir (str, optional): Directory containing (or to download) model weights.
+        temp_dir (str, optional): Directory for temporary files.
+        device (str, optional): Device to run models on.
 
     Returns:
-        Tuple[Agent, Dict[str, BaseTool]]: Initialized agent and dictionary of tool instances
+        Dict[str, BaseTool]: Tool instances keyed by tool name
     """
-    prompts = load_prompts_from_file(prompt_file)
-    prompt = prompts["MEDICAL_ASSISTANT"]
-
     all_tools = {
         "ChestXRayClassifierTool": lambda: ChestXRayClassifierTool(device=device),
         "ChestXRaySegmentationTool": lambda: ChestXRaySegmentationTool(device=device),
@@ -71,6 +53,50 @@ def initialize_agent(
     for tool_name in tools_to_use:
         if tool_name in all_tools:
             tools_dict[tool_name] = all_tools[tool_name]()
+        else:
+            print(f"Warning: unknown tool '{tool_name}' skipped")
+    return tools_dict
+
+
+def initialize_agent(
+    prompt_file,
+    tools_to_use=None,
+    model_dir="/model-weights",
+    temp_dir="temp",
+    device="cuda",
+    model="chatgpt-4o-latest",
+    temperature=0.7,
+    top_p=0.95,
+    openai_kwargs={},
+    playbook_path=None,
+):
+    """Initialize the MedRAX agent with specified tools and configuration.
+
+    Args:
+        prompt_file (str): Path to file containing system prompts
+        tools_to_use (List[str], optional): List of tool names to initialize. If None, all tools are initialized.
+        model_dir (str, optional): Directory containing model weights. Defaults to "/model-weights".
+        temp_dir (str, optional): Directory for temporary files. Defaults to "temp".
+        device (str, optional): Device to run models on. Defaults to "cuda".
+        model (str, optional): Model to use. Defaults to "chatgpt-4o-latest".
+        temperature (float, optional): Temperature for the model. Defaults to 0.7.
+        top_p (float, optional): Top P for the model. Defaults to 0.95.
+        openai_kwargs (dict, optional): Additional keyword arguments for OpenAI API, such as API key and base URL.
+        playbook_path (str, optional): Path to an ACE playbook (e.g. best_playbook.txt produced by
+            experiments/ace_medrax) to append to the system prompt. Defaults to None (no playbook).
+
+    Returns:
+        Tuple[Agent, Dict[str, BaseTool]]: Initialized agent and dictionary of tool instances
+    """
+    prompts = load_prompts_from_file(prompt_file)
+    prompt = prompts["MEDICAL_ASSISTANT"]
+
+    if playbook_path:
+        with open(playbook_path, "r") as f:
+            prompt = add_playbook_to_prompt(prompt, f.read())
+        print(f"Loaded playbook from {playbook_path}")
+
+    tools_dict = build_tools(tools_to_use, model_dir=model_dir, temp_dir=temp_dir, device=device)
 
     checkpointer = MemorySaver()
     model = ChatOpenAI(model=model, temperature=temperature, top_p=top_p, **openai_kwargs)
@@ -125,7 +151,8 @@ if __name__ == "__main__":
         model="gpt-4o",  # Change this to the model you want to use, e.g. gpt-4o-mini
         temperature=0.7,
         top_p=0.95,
-        openai_kwargs=openai_kwargs
+        openai_kwargs=openai_kwargs,
+        playbook_path=os.getenv("MEDRAX_PLAYBOOK"),  # Optional ACE playbook, e.g. best_playbook.txt
     )
     demo = create_demo(agent, tools_dict)
 

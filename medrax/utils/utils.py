@@ -1,6 +1,32 @@
 import os
 import json
-from typing import Dict, List
+from typing import Dict, List, Optional
+
+
+PLAYBOOK_HEADER = (
+    "\n\n## Playbook\n"
+    "The following playbook contains strategies, tool-usage insights and common mistakes "
+    "learned from previous chest X-ray cases. Apply the relevant entries when answering.\n\n"
+)
+
+
+def add_playbook_to_prompt(system_prompt: str, playbook: Optional[str]) -> str:
+    """
+    Append a learned ACE playbook (see experiments/ace_medrax) to a system prompt.
+
+    Used both by main.py at inference time and by the ACE training code, so the agent sees
+    the playbook in exactly the same form in both places.
+
+    Args:
+    system_prompt (str): The base system prompt.
+    playbook (Optional[str]): Playbook text; if empty or None the prompt is returned unchanged.
+
+    Returns:
+    str: The system prompt with the playbook appended.
+    """
+    if not playbook or not playbook.strip():
+        return system_prompt
+    return system_prompt + PLAYBOOK_HEADER + playbook.strip()
 
 
 def load_prompts_from_file(file_path: str) -> Dict[str, str]:
