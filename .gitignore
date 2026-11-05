@@ -172,3 +172,9 @@ logs/
 temp/
 
 .gradio/
+
+# ChestAgentBench download (huggingface.co/datasets/wanglab/chest-agent-bench)
+chestagentbench/
+
+# ACE experiment outputs (playbooks, predictions, agent traces)
+experiments/ace_medrax/results/

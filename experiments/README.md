@@ -34,6 +34,14 @@ Finally, to analyze results, run:
 python analyze_axes.py results/[logfile].json ../benchmark/questions/ --model [gpt4|llama|chexagent|llava-med] --max-questions [optional:int]
 ```
 
+### ACE playbooks
+
+To learn a playbook of strategies for MedRAX with Agentic Context Engineering (ACE) and evaluate it on ChestAgentBench, see [`ace_medrax/README.md`](ace_medrax/README.md). Run from the repository root:
+```bash
+python -m experiments.ace_medrax.run --mode eval --label baseline     # MedRAX without a playbook
+python -m experiments.ace_medrax.run --mode offline --eval-test       # train + test a playbook
+```
+
 ### CheXbench
 
 To run the models on chexbench, you can use `chexbench_gpt4.py` as a reference. You'll need to download the dataset files locally, and upload them for each request. Rad-ReStruct and Open-I use the same set of images, so you can download the `NLMCXR.zip` file just once and copy the images to both directories.

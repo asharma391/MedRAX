@@ -1,0 +1,53 @@
+{
+  "data_dir": "chestagentbench",
+  "split_file": "experiments/ace_medrax/splits/chestagentbench_seed42.json",
+  "split": {
+    "n_train_cases": 80,
+    "n_val_cases": 30,
+    "seed": 42
+  },
+  "data": {
+    "use_explanation_feedback": true,
+    "shuffle_answer_options": false
+  },
+  "medrax": {
+    "model": "gpt-4o",
+    "temperature": 0.2,
+    "top_p": 0.95,
+    "tools": [
+      "ChestXRayClassifierTool",
+      "ChestXRaySegmentationTool",
+      "ChestXRayReportGeneratorTool",
+      "XRayVQATool",
+      "XRayPhraseGroundingTool",
+      "LlavaMedTool"
+    ],
+    "model_dir": null,
+    "temp_dir": "temp",
+    "device": "cuda",
+    "max_agent_steps": 30,
+    "max_tool_output_chars": 1500,
+    "send_images_to_llm": true
+  },
+  "ace": {
+    "api_provider": "openai",
+    "reflector_model": "gpt-4o",
+    "curator_model": "gpt-4o",
+    "max_tokens": 4096,
+    "initial_playbook": "experiments/ace_medrax/initial_playbook.txt",
+    "num_epochs": 1,
+    "max_num_rounds": 1,
+    "curator_frequency": 1,
+    "eval_steps": 100,
+    "save_steps": 25,
+    "online_eval_frequency": 15,
+    "playbook_token_budget": 10000,
+    "json_mode": false,
+    "no_ground_truth": false,
+    "test_workers": 4,
+    "use_bulletpoint_analyzer": false,
+    "bulletpoint_analyzer_threshold": 0.9,
+    "skip_post_curate_generation": true
+  },
+  "save_dir": "experiments/ace_medrax/results"
+}
