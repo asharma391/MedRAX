@@ -27,7 +27,8 @@ def initialize_clients(api_provider):
             raise ValueError("Together api key not found in environment variables")
     elif api_provider == "openai":
         # Use OpenAI API
-        base_url = "https://api.openai.com/v1"
+        # MedRAX modification: honor OPENAI_BASE_URL like MedRAX's main.py does
+        base_url = os.getenv('OPENAI_BASE_URL') or "https://api.openai.com/v1"
         api_key = os.getenv('OPENAI_API_KEY', '')
         if not api_key:
             raise ValueError("OpenAI api key not found in environment variables")

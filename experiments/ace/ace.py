@@ -19,6 +19,17 @@ from .logger import *
 from .utils import *
 
 
+def _environment_feedback(data_processor, task_dict, is_correct, default):
+    """MedRAX modification: let a data processor supply richer reflector feedback.
+
+    If the processor defines ``environment_feedback(task_dict, is_correct, default)``
+    (e.g. to include ChestAgentBench's expert explanation), use it; otherwise fall back
+    to ACE's original fixed strings.
+    """
+    fn = getattr(data_processor, "environment_feedback", None)
+    return fn(task_dict, is_correct, default) if callable(fn) else default
+
+
 class ACE:
     """
     Main ACE system orchestrator.
@@ -131,7 +142,10 @@ class ACE:
             'save_dir': config.get('save_dir', './results'),
             'test_workers': config.get('test_workers', 20),
             'use_bulletpoint_analyzer': config.get('use_bulletpoint_analyzer', False),
-            'bulletpoint_analyzer_threshold': config.get('bulletpoint_analyzer_threshold', 0.90)
+            'bulletpoint_analyzer_threshold': config.get('bulletpoint_analyzer_threshold', 0.90),
+            # MedRAX modification: each generation is a full (expensive) agent run, so allow
+            # skipping the extra post-curation generation in _train_single_sample.
+            'skip_post_curate_generation': config.get('skip_post_curate_generation', False),
         }
     
     def _setup_paths(self, save_dir: str, task_name: str, mode: str) -> Tuple[str, str]:
@@ -512,7 +526,9 @@ class ACE:
                     reasoning_trace=gen_response,
                     predicted_answer=final_answer,
                     ground_truth=target if not no_ground_truth else None,
-                    environment_feedback="Predicted answer does not match ground truth",
+                    environment_feedback=_environment_feedback(
+                        data_processor, task_dict, False,
+                        "Predicted answer does not match ground truth"),
                     bullets_used=playbook_bullets,
                     use_ground_truth=not no_ground_truth,
                     use_json_mode=use_json_mode,
@@ -555,7 +571,9 @@ class ACE:
                 reasoning_trace=gen_response,
                 predicted_answer=final_answer,
                 ground_truth=target if not no_ground_truth else None,
-                environment_feedback="Predicted answer matches ground truth",
+                environment_feedback=_environment_feedback(
+                    data_processor, task_dict, True,
+                    "Predicted answer matches ground truth"),
                 bullets_used=playbook_bullets,
                 use_ground_truth=not no_ground_truth,
                 use_json_mode=use_json_mode,
@@ -606,6 +624,18 @@ class ACE:
                 )
         
         # STEP 4: Post-curator generation
+        if config_params.get('skip_post_curate_generation', False):
+            # MedRAX modification: reuse the last answer (after any reflection rounds)
+            # instead of paying for another full agent run.
+            tracking_dict["post_train_result"] = {
+                "final_answer": final_answer,
+                "is_correct": is_correct,
+                "post_curate_generation_skipped": True,
+                "playbook_num_tokens": count_tokens(self.playbook),
+                "playbook_length": len(self.playbook)
+            }
+            return pre_train_answer, final_answer, tracking_dict
+
         gen_response, _, _ = self.generator.generate(
             question=question,
             playbook=self.playbook,
