@@ -94,3 +94,4 @@ strict_optional = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]  # so tests can import main.py and the experiments.* packages
