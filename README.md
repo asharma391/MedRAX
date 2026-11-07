@@ -115,6 +115,32 @@ agent, tools_dict = initialize_agent(
 )
 ```
 
+### Classifier portability and image precision
+
+`ChestXRayClassifierTool` can be used independently with
+`device="auto"`. For this classifier only, `auto` selects CUDA when available,
+then Apple MPS, then CPU. Other optional MedRAX tools have their own hardware
+requirements and are not implied to support all of these backends.
+
+```python
+from medrax.tools.classification import ChestXRayClassifierTool
+
+# Standard 8-bit JPG/PNG input
+classifier = ChestXRayClassifierTool(device="auto")
+
+# 12-bit pixels stored in a uint16 PNG (for example, a known 0--4095 encoding)
+classifier_12bit = ChestXRayClassifierTool(device="auto", input_maxval=4095)
+```
+
+The default 8-bit behavior is unchanged. For unsigned images with more than
+8 bits, set `input_maxval` to the **known acquisition intensity scale** rather
+than normalizing to each image's observed maximum. A `uint16` container does
+not by itself reveal whether the source was 12-bit, 16-bit, or another
+encoding, so the tool raises an actionable error when that scale is omitted.
+
+Classifier outputs are operating-point-normalized scores in `[0, 1]`; they are
+not calibrated probabilities and should not be used for clinical decisions.
+
 <br><br>
 ## Automatically Downloaded Models
 
